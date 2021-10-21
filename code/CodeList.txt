@@ -1,0 +1,695 @@
+LoadDataV3 -> Pass the trajectory vehicle csv file and list of vehicle ids to create the occupancy map. It will create the folder and save the OGMs with Input = 30 Frames and Output = 30 positions
+
+LoadDataV4 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 50 Frames and Output = 50 positions
+
+LoadDataV5 -> Same as LoadDataV4. It will create the folder and save the OGMs with Input = 50 Frames and Output = 50 positions along with background maps.
+
+LoadDataV6 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 50 Frames and Output = 50 positions along with the velocities 
+
+LoadDataV7 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 50 Frames and Output = 50 positions along with the velocities but this time for two different channels 
+
+LoadDataV8 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 50 Frames and Output = 50 positions along with the velocities but this time with only one point for one car	 
+
+LoadDataV9 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 30 Frames and Output = 30 positions along classification as Lane Change, Follow Road, Acc, Maintain.....
+
+LoadDataV10 -> Same as LoadDataV3. It will create the folder and save the OGMs with Input = 30 Frames and Output = 30 positions along classification as Lane Change, Follow Road, Acc, Maintain..... and the input trajectory of the target car
+
+LoadDataV11 -> Same as LoadDataV9 except target car as one channel and others at different channel 
+
+LoadDataV12 -> Same as LoadDataV10 except target car as one channel and others at different channel 
+
+
+EncoderDecoderTrajV1 -> Network for input Single car trajectory and output predicted Traj for the next frame
+
+predictLSTMV6.py -> prediction with velocity
+
+JointTrainingV1 -> Training using the maneuver classes
+JointTrainingV2 -> Training using the maneuver classes and the input trajectory
+
+Interaction1 -> Just the input Traj and lstm Encoder Decoder
+
+
+
+quickTestV3.py for big trajectory to trajectory data in concat3 tmux....................... (train i80 val us101) (try with early stopping once. beacause once the error reduced to 5 as well)
+
+quickPredV1.py testing at tmux pred  for us101........ running ................
+
+
+Traj data folders
+
+BigTrajTrain -> I80 train res (512,2048)
+BigTrajUSTest -> us101 test res (512,2048)
+
+SuperHighTrainI80 -> I80 train res (1024,8192)  model SuperHighTraj.h5
+SuperHighTestUS101 -> us101 test res (1024,8192)
+
+result
+
+[ 0.07007546  0.14622175  0.22545057  0.30730669  0.39254101  0.48079489
+  0.57328886  0.66916504  0.76946837  0.8742142   0.98319934  1.09681082
+  1.21509473  1.33819757  1.46124142  1.58303334  1.70415364  1.82411059
+  1.94309775  2.06098966  2.18269429  2.30798659  2.43689656  2.56932499
+  2.70525148  2.8446825   2.98781393  3.13516635  3.28698534  3.44365713
+  3.60517625  3.77143301  3.94285012  4.11880561  4.29411673  4.46807792
+  4.64119471  4.81309397  4.98372817  5.15295713  5.32570969  5.50171434
+  5.68075203  5.86311343  6.04867936  6.23781139  6.43032926  6.6266358
+  6.82795948  7.03431858  7.24565878  7.46180414  7.68310091  7.90898775
+  8.13365986  8.35636593  8.57796664  8.79793478  9.0163359   9.23292513
+  9.45295949  9.67594708  9.90158693 10.13000129 10.36138081 10.59545674
+ 10.83238779 11.07253368 11.31766284 11.56791555 11.82298596 12.08291493
+ 12.34802122 12.61745618 12.8846061  13.14919228 13.41198121 13.6726462
+ 13.93092505 14.18696884 14.44613885 14.70752874 14.97079406 15.23628489
+ 15.50397713 15.77414267 16.04656684 16.32161046 16.60186174 16.88698345
+ 17.17691481 17.47133    17.77070305 18.0742146  18.37488527 18.67259865
+ 18.96828784 19.2612829  19.55156847 19.8392117 ]
+
+
+
+
+ExtraSuperHighTrainI80 -> I80 train res (1024,16384) model ExtraSuperHighTraj.h5  loss 5.56   4.10
+ExtraSuperHighTestUS101 -> us101 test res (1024,16384)
+
+
+running 
+
+
+
+I80Res32768 -> I80 train res (2048,32768)  ... runnning
+ExtraSuperHighTestUS101 -> us101 test res (1024,16384)
+
+
+
+
+
+
+
+
+
+
+
+TrainLStMV2 -> Pick the samples from the folder path using generator to save the RAM memory. Temporal window is 30 Frames. Lat Lon loss factor is 0.65
+Architecture:
+Conv2D (4)(5,5)
+Conv2D (8)(5,5)
+Conv2D (16)(5,5)
+Flatten
+LSTM 256
+LSTM 128
+Dense 512
+Dense 256
+Dense 128
+Dense 64
+Dense 32
+Dense 2
+
+TrainLStMV3 -> Pick the samples from the folder path using generator to save the RAM memory. Temporal window is 50 Frames Lat Lon loss factor is 0.65, added original Euclidian Loss
+Architecture:
+Conv2D (4)(5,5)
+Conv2D (8)(5,5)
+Conv2D (16)(5,5)
+Flatten
+LSTM 256
+LSTM 256
+Dense 512
+Dense 256
+Dense 128
+Dense 64
+Dense 32
+Dense 2
+
+This one with Exp decay worked a bit till 10
+
+# Basic LSTM structure with Conv2D
+model = Sequential()
+# define CNN model
+model.add(TimeDistributed(Conv2D(4, (3,3), activation='relu', padding='same'), input_shape=(temporal,OccupancyImageHeight,OccupancyImageWidth,channel)))
+model.add(TimeDistributed(MaxPooling2D(pool_size=(3,3))))
+model.add(TimeDistributed(Conv2D(8, (5,5), activation='relu', padding='same')))
+model.add(TimeDistributed(MaxPooling2D(pool_size=(5,5))))
+model.add(TimeDistributed(Conv2D(16, (7,7), activation='relu', padding='same')))
+model.add(TimeDistributed(MaxPooling2D(pool_size=(7,7))))
+model.add(TimeDistributed(Conv2D(32, (9,9), activation='relu', padding='same')))
+model.add(TimeDistributed(Flatten()))
+#model.add(TimeDistributed(MaxPooling1D(pool_size=4)))
+# define LSTM model
+model.add(LSTM(256, return_sequences=True))
+model.add(LeakyReLU(alpha=0.1))
+model.add(LSTM(128, return_sequences=True))
+model.add(LeakyReLU(alpha=0.1))
+model.add(TimeDistributed(Dense(512)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+#model.add(Dropout(0.2))
+model.add(TimeDistributed(Dense(256)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+#model.add(Dropout(0.2))
+model.add(TimeDistributed(Dense(128)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+model.add(TimeDistributed(Dense(64)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+model.add(TimeDistributed(Dense(32)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+model.add(TimeDistributed(Dense(16)))
+model.add(TimeDistributed(LeakyReLU(alpha=0.1)))
+model.add(TimeDistributed(BatchNormalization()))
+model.add(TimeDistributed(Dense(2, activation='linear')))
+
+opt = RMSprop()
+loss_history = LossHistory()
+lrate = LearningRateScheduler(exp_decay)
+callbacks_list = [loss_history, lrate]
+
+model.compile(loss=EuclidianLoss, optimizer=opt, metrics=[EuclidianDistanceMetric])
+model.summary()
+
+dataGen = CIFAR10Sequence(folderList,BatchSize)
+stepsPerEpoch = numberOfSamples // BatchSize
+#history = model.fit_generator(dataGen, steps_per_epoch=stepsPerEpoch, epochs=150, verbose=1)
+history = model.fit_generator(dataGen, steps_per_epoch=stepsPerEpoch, epochs=40, verbose=1, callbacks=callbacks_list)
+model.save('ExpDecay.h5')
+
+
+
+LeakyReLU is one thing good..
+Extra Conv Layer one thing good..(Most probably without BatchNormalization with the convs)
+Try with different alpha of Leaky ReLU a bit increased.
+
+Use PredictLSTMV6.py for these prediction: (do not change the originx +/-)
+Data Folders in Server
+PositionTrain -> 30/30 1024/128 (each car as box)
+PositionValidate -> 30/30 1024/128 (each car as box)
+
+PositionTrainHighRes -> 30/30 1024/256 (each car as box)
+ValidateTrainHighRes -> 30/30 1024/256 (each car as box)
+
+
+Use PredictLSTMV7.py for these prediction: (do not change the originx +/-)
+PositionDotTrainData     -> 30/30 1024/256 (each car as dot)
+PositionDotValidateData  -> 30/30 1024/256 (each car as dot)
+
+
+TrainValRegDecay.h5 -> loss: 1.2947 - euclidean_distance_loss: 1.0181 - val_loss: 11.8875 - val_euclidean_distance_loss: 11.6111  (Input is box car images) resolution -> 1024/128 regularizer added with value 0.001
+
+TrainValRegDecayHighRes.h5 -> loss: 1.2119 - euclidean_distance_loss: 1.1744 - val_loss: 10.7039 - val_euclidean_distance_loss: 10.6664 (Input is box car images) resolution -> 1024/256 regularizer added with value 0.0001 (No velocity only position)
+
+
+
+
+keras graph convolution network
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 130/130
+540/540 [==============================] - 1224s 2s/step - loss: 0.2684 - euclidean_distance_loss: 0.2684 - val_loss: 0.8485 - val_euclidean_distance_loss: 0.8485
+
+
+
+Error count 1179 ConcatNoMaxPool.h5\concat1 vehicle ID 121.0, 144.0 (train)
+----------------------------------------------------------------------
+[0.10062622 0.177912   0.2598367  0.34165151 0.41535277 0.50854975
+ 0.5965364  0.68018566 0.76724035 0.85426364 0.95313175 1.03780745
+ 1.12854814 1.21381652 1.295825   1.38205373 1.46790242 1.55730528
+ 1.64386814 1.72831632 1.81853641 1.90279567 1.99363844 2.07464197
+ 2.1563323  2.24234099 2.31726929 2.39347811 2.46608739 2.54592046]
+
+Error count 1516  ConcatNoMaxPool.h5\concat1 vehicle ID 54 115 (val)
+[0.15299738 0.27450732 0.40959505 0.54569677 0.67946183 0.81088186
+ 0.94897473 1.08008855 1.2106418  1.35728744 1.49013692 1.62249511
+ 1.76144343 1.9058373  2.03390683 2.17238551 2.30761164 2.44248296
+ 2.57651643 2.70933775 2.8452108  2.97933749 3.10973705 3.24609673
+ 3.37698832 3.50596111 3.64045447 3.77321934 3.90483343 4.03492667]
+
+
+Epoch 150/150
+540/540 [==============================] - 1173s 2s/step - loss: 0.2571 - euclidean_distance_loss: 0.2571 - val_loss: 1.0355 - val_euclidean_distance_loss: 1.0355
+
+
+Error count 1179 ConcatExtraState.h5\concat2 vehicle ID 121.0, 144.0 (train)
+---------------------------------------------------------------------------
+[0.05316919 0.1499297  0.26282613 0.39291017 0.51707201 0.65223566
+ 0.79493002 0.94076036 1.09148154 1.23000515 1.37674338 1.51562367
+ 1.64969303 1.78387456 1.91174683 2.04435226 2.16921366 2.29588532
+ 2.41828324 2.53874238 2.66108232 2.77895748 2.90038811 3.02067496
+ 3.1358234  3.25716355 3.37325417 3.49580598 3.61396204 3.74372883]
+
+Error count 1516 ConcatExtraState.h5\concat2 vehicle ID 54.0, 115.0 (val)
+[0.18649098 0.31737303 0.45543784 0.59937929 0.74325834 0.89554698
+ 1.06065026 1.21153047 1.36331454 1.50559964 1.65123402 1.80496899
+ 1.9591074  2.13232354 2.28397594 2.43573304 2.57340819 2.717003
+ 2.86874116 3.01498403 3.17274376 3.32115103 3.47101491 3.60977411
+ 3.7522923  3.89909152 4.05352594 4.20740081 4.3414894  4.49239098]  ConcatLeakyforLSTM
+	
+
+Epoch 150/150
+540/540 [==============================] - 1178s 2s/step - loss: 0.3089 - euclidean_distance_loss: 0.3089 - val_loss: 0.5731 - val_euclidean_distance_loss: 0.5731
+
+Error count 1179 ConcatLeakyforLSTM.h5\concat3 vehicle ID 121.0, 144.0 (train)
+---------------------------------------------------------------------------------
+Error count 1179
+[0.05511629 0.13447066 0.22333724 0.32717115 0.41389008 0.51201346
+ 0.60625688 0.72100582 0.82103566 0.91983944 1.02392793 1.13187404
+ 1.23324567 1.33088657 1.44416187 1.54904623 1.65662084 1.76400695
+ 1.87572443 1.98891751 2.10082259 2.21261595 2.32560863 2.43791846
+ 2.54641114 2.65437898 2.76472678 2.87457357 2.984289   3.09918762]
+
+Error count 1516 ConcatLeakyforLSTM.h5\concat3 vehicle ID 54.0, 115.0 (val)
+[0.10277553 0.19705747 0.30827658 0.42072598 0.53440706 0.64380986
+ 0.76669024 0.88388862 0.9973858  1.12131668 1.23786924 1.36854375
+ 1.49054263 1.63030017 1.74966942 1.87719527 2.00346321 2.12944774
+ 2.26098876 2.38609054 2.51593182 2.64652432 2.77689831 2.90895938
+ 3.03884546 3.17176747 3.30772653 3.4397199  3.5638451  3.69727734]
+
+
+
+Epoch 150/150
+540/540 [==============================] - 1228s 2s/step - loss: 0.2058 - euclidean_distance_loss: 0.2058 - val_loss: 0.5827 - val_euclidean_distance_l
+oss: 0.5827
+
+Error count 1179 ConcatExtraStateLeakyforLSTM\concat4 vehicle ID 121.0, 144.0 (train)
+--------------------------------------------------------------------------------
+[0.03328606 0.1119943  0.20190896 0.31572644 0.41814288 0.52571816
+ 0.63443534 0.73911386 0.85077207 0.95260999 1.06266031 1.16121687
+ 1.26526128 1.3700384  1.47080818 1.57414755 1.67225033 1.77580957
+ 1.87628653 1.97614833 2.07454404 2.17619314 2.26746058 2.36021621
+ 2.45209804 2.54513824 2.63730206 2.73208517 2.82422155 2.93771489]
+
+Error count 1516 ConcatExtraStateLeakyforLSTM\concat4 vehicle ID ID 54.0, 115.0 (val)
+[0.10067207 0.21245215 0.356611   0.53153267 0.7170275  0.92079309
+ 1.12838513 1.35198549 1.57596558 1.80613481 2.02753584 2.24932986
+ 2.47536244 2.69416085 2.91665497 3.15171827 3.38469176 3.61725507
+ 3.8549229  4.09408302 4.32257077 4.56166355 4.79597205 5.0247511
+ 5.24836781 5.4724159  5.70086621 5.91745518 6.13778808 6.36546272]
+
+
+
+
+
+
+
+
+
+tmux Concat1 file ConcatV3.py   ConcatLeakyforLSTMNewData.h5
+Epoch 140/140
+733/733 [==============================] - 1607s 2s/step - loss: 0.2461 - euclidean_distance_loss: 0.2461 - val_loss: 0.4007 - val_euclidean_distance_loss: 0.4007
+
+tmux Concat3 file ConcatV5.py  ConcatReluforLSTMBetterData
+Epoch 140/140
+733/733 [==============================] - 1621s 2s/step - loss: 0.3020 - euclidean_distance_loss: 0.3020 - val_loss: 0.4718 - val_euclidean_distance_loss: 0.4718
+(lstm) sap@se
+
+
+
+Epoch 140/140 ConcatV3.py model   HighDV1.h5
+290/290 [==============================] - 610s 2s/step - loss: 0.0811 - euclidean_distance_loss: 0.0811 - val_loss: 0.1513 - val_euclidean_distance_loss: 0.1513
+
+
+122 ** 5.***,
+ 165 6.0   subtract 2 no cast  6.0
+86 on hold.....
+141,   5.57
+139*** no car
+151  6+
+117 7.2
+121, 54 6.2 
+
+car 74
+original  6.02 
+check 511 subtract 2 int cast 5.29
+check 511 subtract 2 no cast 4.55 
+check 511 subtract 1 no cast 5.65
+
+car 84 
+check 511 subtract 2 no cast 4.61
+
+car 107 
+check 511 subtract 2 no cast 5.69
+
+car 66 
+check 511 subtract 2 no cast 4.84
+
+74 84 66
+
+car 74 + 141 running for other setting .... 
+check 511 subtract 2 no cast 
+
+
+141 
+original 5.57
+check 511 subtract 2 no cast 5.4
+check 511 subtract 1 no cast 5.56
+
+15
+13
+
+
+LaneChangeVehicleList = [87.0,44.0,50.0,51.0,41.0,121.0,108.0,149.0,100.0]
+#LaneChangeVehicleList = [54.0, 144.0]
+
+highd -> 
+velocity 20.94 car 51 result 3.45 11111
+velocity 20.95 car 57 result 2.86 
+velocity 25.29 car 705 result 3.48 22222
+velocity 27.43 car 265 result 2.87
+velocity 30.16 car 1295 result 6.9 
+velocity 28.07 car 270 result 7.05 
+velocity 28.94 car 1332 result 5.50 1111
+velocity 33.31 car 91 result 12.8 
+
+
+velocity 24.71 car 681 result running 3.7 (HighD1) 222222
+velocity 28.08 car 618 result running 9.4 (HighD2)
+
+
+
+with new change 14.6
+
+
+
+[0.05775492 0.10484598 0.19509434 0.24522491 0.34210415 0.42323093
+ 0.49654122 0.5830494  0.67835576 0.74358806 0.83522781 0.91667487
+ 1.00814858 1.09090744 1.15122503 1.25454266 1.33880758 1.42198505
+ 1.48268305 1.576611   1.66782792 1.73475995 1.8337755  1.91532341
+ 2.02156025 2.09723812 2.20203176 2.29154202 2.36839311 2.449982
+ 2.54446561 2.63182234 2.72388764 2.80692176 2.89274521 2.98944477
+ 3.08761628 3.20623464 3.29674974 3.39376988 3.48954775 3.58332157
+ 3.66998288 3.76405605 3.86492762 3.95931213 4.04157186 4.12532008
+ 4.21887748 4.306804  ]   highD relu   0.74358806  1.576611  2.449982 3.39376988  4.306804
+
+                        highD leaky  0.87789424  1.55503234  2.20835376  2.88674134  3.59741725
+
+[0.3070219  0.25127889 0.4200699  0.46950547 0.48022496 0.65401455  3.39376988
+ 0.67631814 0.6981846  0.8579537 0.87789424
+
+ 0.9385386  1.05357847
+ 1.06179188 1.13991185 1.2476499  1.27284709 1.35118499 1.43064198
+ 1.4755934  1.55503234
+
+ 1.62114092 1.7002479  1.74569777 1.79631978
+ 1.88935564 1.94524896 2.02324363 2.09331248 2.12629635 2.20835376
+
+
+ 2.29710262 2.33934899 2.42142676 2.49001646 2.54673716 2.62110581
+ 2.69951523 2.77739937 2.83061985 2.88674134
+
+ 2.98021899 3.04581438
+ 3.10310622 3.20554004 3.24032175 3.30255722 3.39127849 3.43887469
+ 3.51202446 3.59741725] setting 2  0.87789424  1.55503234  2.20835376  2.88674134  3.59741725
+
+
+
+469 confusion
+
+
+
+baseline 10 sec
+
+tensor([  0.1109   0.2170   0.3325   0.4554   0.5806   
+
+0.7103
+          0.8421   0.9774   1.1184   1.2654  
+
+ 1.4191   1.5803
+          1.7493   1.9259   2.1108   
+
+2.3050   2.5094   2.7248
+          2.9504   3.1874   
+
+3.4357   3.6946   3.9643   4.2442
+          4.5364  
+
+ 4.8419   5.1605   5.4952   5.8474   6.2181
+
+          6.6112   7.0272   7.4698   7.9391   8.4288  
+
+ 8.9374
+          9.4655  10.0096  10.5638  11.1273 
+
+ 11.7041  12.2992
+         12.9138  13.5495  14.2086  
+
+14.8934  15.6039  16.3417
+         17.1072  17.9011], device='cuda:0')
+
+
+0.5806   1.2654  2.1108  3.1874  4.5364 6.2181  8.4288 11.1273 14.2086 17.9011
+
+
+
+CV
+[ 0.02051643  0.05702431  0.10729346  0.16951199  0.24279169  0.32663482
+  0.41970393  0.52060387  0.62876306  0.7426886  
+
+
+ 0.86128211  0.98444438
+  1.11149642  1.24023985  1.3709363   1.50302302  1.63743359  1.77469247
+  1.91457114  2.05759082 
+
+ 2.20431534  2.354738    2.50904885  2.66811237
+  2.83257242  3.0024675   3.17773348  3.35718828  3.54013263  3.72582801
+
+
+  3.91342451  4.10277271  4.29409565  4.48705948  4.68139545  4.87699405
+  5.07235279  5.26790284  5.46333581  5.65778454  
+
+5.85186499  6.04618423
+  6.24144584  6.43757973  6.63413707  6.83147472  7.02928477  7.22726594
+  7.42539532  7.62384071  
+
+7.82256619  8.02163101  8.22124188  8.42192279
+  8.62354758  8.82599264  9.02951243  9.23351237  9.43778015  9.64217947
+
+
+  9.84668433 10.05185032 10.25801402 10.4661848  10.67692974 10.89039028
+ 11.10577914 11.32257198 11.54035875 11.75899 
+
+   11.97870566 12.1992938
+ 12.42049333 12.64213402 12.86435972 13.08766635 13.31094533 13.53391129
+ 13.75708844 13.98058119 
+14.20518617 14.43187414 14.66144037 14.89363382
+ 15.12710883 15.36064219 15.59322911 15.82394179 16.052837   16.28039975
+
+ 16.50673904 16.73168627 16.9551429  17.17685527 17.39675142 17.61503596
+ 17.83203504 18.04802441 18.26304711 18.47724605]
+
+0.7426886 2.05759082 3.72582801 5.65778454 7.62384071 9.64217947  11.75899  13.9805811 16.28039975 18.47724605
+
+ prposed
+temp...
+[ 0.11621812  0.18394079  0.21672137  0.29555489  0.35061835  0.44089435
+  0.51128353  0.61882231  0.70468071  0.80905517  
+
+0.89316197  1.00572175
+  1.08185067  1.18275244  1.25199655  1.34541796  1.41951536  1.51538614
+  1.58276513  1.67659345 
+
+ 1.74422827  1.83856617  1.9048399   1.99278115
+  2.05121459  2.13536046  2.19085227  2.27460417  2.32536398  2.39708152
+
+
+  2.46312847  2.52840413  2.5906387   2.66298736  2.73056248  2.83132609
+  2.91732234  3.03390301  3.1251496   3.23314238  
+
+3.32494943  3.43773432
+  3.54573257  3.6811707   3.81085155  3.9488701   4.08754876  4.2317728
+  4.36444433  4.50467     
+
+4.62886614  4.76380496  4.88820991  5.02084625
+  5.13301119  5.25913787  5.35924626  5.47597894  5.5661476   5.66904095
+
+
+  5.76008316  5.86198382  5.95315539  6.06881778  6.18173641  6.31184788
+  6.44750338  6.60801547  6.76218818  6.92173728 
+
+ 7.06490383  7.22574513
+  7.37733694  7.53409066  7.68867463  7.84632141  7.99754993  8.14549513
+  8.29479918  8.43176259 
+
+ 8.57311935  8.71246966  8.8447445   8.97853652
+  9.10556709  9.23875292  9.35969691  9.48820203  9.61172149  9.73727017
+
+
+  9.85719179  9.98506993 10.11417763 10.25554544 10.411941   10.59343767
+ 10.78061926 10.99383638 11.19329487 11.40348349]
+
+
+0.80905517 1.67659345 2.39708152 3.23314238 4.50467  5.66904095 6.92173728 8.43176259 9.73727017 11.40348349
+ 
+
+vlstm temp
+Global Error Count = 1355
+[ 0.06865054  0.13810652  0.2163621   0.29333396  0.37822857  0.46186828
+  0.54360449  0.63102258  0.71952143  0.81088039 
+
+ 0.90272672  0.99481214
+  1.0915931   1.18871689  1.28909721  1.38699712  1.48749842  1.58701059
+  1.68497975  1.78543724 
+
+ 1.88856916  1.99181117  2.09547109  2.1990339
+  2.30322867  2.41370526  2.52000624  2.62908033  2.74107863  2.85406651
+
+
+  2.96670043  3.08203847  3.19827793  3.31845895  3.43906759  3.56197493
+  3.68523087  3.8103728   3.93673863  4.0620916 
+
+  4.19167084  4.32135805
+  4.45121275  4.58302868  4.71621309  4.85088436  4.98460067  5.12007094
+  5.25430972  5.39285526  
+
+5.53282436  5.67170457  5.8135524   5.95501858
+  6.09729844  6.24075646  6.38909578  6.53955555  6.69099648  6.84132205
+
+
+  6.99298935  7.14511507  7.29848156  7.45254175  7.60602016  7.76054486
+  7.91411538  8.0710153   8.22887628  8.38841686 
+
+ 8.54921373  8.7100625
+  8.87265739  9.03704619  9.20164029  9.36801299  9.5357959   9.7078964
+  9.87880735 10.05297656 
+
+10.22616613 10.4030835  10.57982176 10.75826691
+ 10.93885804 11.12018995 11.30311686 11.48482593 11.66969276 11.85168773
+
+ 12.03934801 12.22479835 12.41328635 12.60321766 12.79608954 12.98751034
+ 13.18060116 13.37860454 13.57475932 13.77462996]
+
+0.81088039 1.78543724 2.85406651 4.0620916 5.39285526 6.84132205 8.38841686  10.05297656 11.85168773 13.77462996
+
+vlstm backup
+
+[ 0.09784732  0.23037987  0.34807931  0.48864221  0.62089861  0.75755237
+  0.88781959  1.01810134  1.14464522  1.2935361   1.45636393  1.60052268
+  1.75088034  1.89320351  2.05266408  2.22413865  2.40001719  2.57290816
+  2.75335235  2.93634759  3.11712887  3.31551991  3.50462785  3.69812241
+  3.89458918  4.09584391  4.29432496  4.48480685  4.66497011  4.84025985
+  5.00220442  5.16679962  5.30785635  5.47905626  5.61772759  5.76982471
+  5.91127601  6.03890597  6.17056218  6.27800524  6.39175193  6.48817493
+  6.60258737  6.72426153  6.85719772  6.99793157  7.12864984  7.26122086
+  7.39024724  7.52929746  7.64632173  7.77152914  7.90782532  8.04976632
+  8.22382661  8.38378481  8.56233892  8.73502047  8.90756626  9.06413836
+  9.22741692  9.38754638  9.54979516  9.71130684  9.86801157 10.02325563
+ 10.1979062  10.36683749 10.52991521 10.70549299 10.87496533 11.03078976
+ 11.19252358 11.34110182 11.51134463 11.69565305 11.87983413 12.06923457
+ 12.25883534 12.46492213 12.65064381 12.83350759 13.02954841 13.2060927
+ 13.39422538 13.58500935 13.79363826 13.99567948 14.2000136  14.40321192
+ 14.6056178  14.80243636 14.97835718 15.15777144 15.3183939  15.45750985
+ 15.61331066 15.7612494  15.92019401 16.04942618]
+
+Global Error Count = 256
+[ 0.11726029  0.25827796  0.40325262  0.55645347  0.70355502  0.85792814
+  1.00520353  1.15352992  1.30304529  1.45484637  1.60847353  1.76187122
+  1.91513022  2.06528391  2.22005019  2.37719445  2.53333505  2.68165232
+  2.83786014  2.99499372  3.15064427  3.31070025  3.47231541  3.63349864
+  3.79963779  3.96076575  4.13015222  4.28946733  4.44589032  4.59239909
+  4.74811753  4.9075127   5.06645579  5.23588271  5.39991678  5.56839357
+  5.73235072  5.90077203  6.06574175  6.22833898  6.39280581  6.56093163
+  6.72670118  6.89570071  7.0627504   7.23250553  7.39921678  7.56197058
+  7.72141337  7.88589998  8.04405806  8.20588478  8.3798168   8.54446963
+  8.72412038  8.90105585  9.08089596  9.2641834   9.44901558  9.62804931
+  9.80930633  9.98496044 10.15745639 10.33266357 10.50593147 10.67947184
+ 10.8537082  11.02631151 11.20196042 11.37388094 11.54906767 11.72881676
+ 11.90993078 12.09570422 12.28400105 12.47510378 12.66661841 12.85545471
+ 13.04638648 13.24244706 13.43104304 13.62593902 13.81831229 14.00914758
+ 14.19499482 14.37862    14.55832279 14.73885034 14.91691776 15.08563866
+ 15.25620607 15.42334233 15.59164446 15.76178197 15.92171426 16.08537604
+ 16.25272718 16.4179404  16.58511471 16.74783516]
+472
+
+
+
+
+
+
+
+
+
+
+quicktestV4.py NoStateYesBNs.h5  shift 5 
+
+Global Error Count = 43392
+[ 0.03537268  0.08374773  0.14495227  0.21600491  0.29222531  0.37065976
+  0.44685421  0.51872548  0.5839101   0.6436202   0.7062607   0.78222005
+  0.87110516  0.96908581  1.07234867  1.17720857  1.27936373  1.37508921
+  1.4620361   1.54213252  1.62608022  1.72711265  1.84503125  1.97391477
+  2.10846836  2.2435656   2.37338834  2.49273174  2.59928402  2.6968829
+  2.80036498  2.9268939   3.07588465  3.23793301  3.40574747  3.57235454
+  3.72932017  3.86998591  3.99233926  4.10355229  4.22422497  4.37635274
+  4.55719863  4.75380809  4.95619498  5.15473386  5.33794673  5.49677517
+  5.6294594   5.74952161  5.88546978  6.06360862  6.27952429  6.51482921
+  6.7565322   6.99075914  7.20063372  7.37327595  7.50900873  7.63110484
+  7.78119521  7.98818495  8.24299303  8.52217845  8.80757705  9.07981742
+  9.31364312  9.48966203  9.6133049   9.72551632  9.8857915  10.12393303
+ 10.42285498 10.75065963 11.08423305 11.39557233 11.64633151 11.80473646
+ 11.88921822 11.97558225 12.14594358 12.42214901 12.76982685 13.14729117
+ 13.52700969 13.8683669  14.11576909 14.21934586 14.2319677  14.27910713
+ 14.46666677 14.7902166  15.18262791 15.61113177 16.03049622 16.38054296
+ 16.58639845 16.59516141 16.51331346 16.52330929]
+
+
+
+running tmux pred
+
+NoStateYesBNs.h5  shift 20    17.65 (quickPredV1)
+
+NoStateNoBNs.h5  shift 50 with modified check   running (quickPredV1)
+
+
+
+quicktestV1.py NoTimeDist.h5  (quickPredV2)
+
+
+running tmux pred1
+
+shift 5  -> 17.015 10000 points
+shift 30  -> almost same
+shift 100 with added modified check  -> 15.45 20000 points
+shift 120 with added modified check till now best 14.74....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ python code/ConcatV3.py .. tmux concat1
+ run finished ..  BigTrain50epoch.h5 ..  BigTrain Small Validation Single State Concat .. 
+ running ..  BigTrainBigValSingleState.h5 .. BigTrain Big Validation Single State Concat .. 
+
+ python code/ConcatV6.py ..  tmux concat2
+ run finished ..  BigTrain50epochDecayChangedV6.h5 .. BigTrain Small Validation  Double State Concat ..
+ running .. BigTrainBigValDoubleState.h5 .. BigTrain Big Validation  Double State Concat ..
+
+
+
+
+
+
+
+
